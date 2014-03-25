@@ -1,0 +1,735 @@
+(dp1
+S'output'
+p2
+S"<type 'exceptions.NameError'> name 'auth_user' is not defined"
+p3
+sS'layer'
+p4
+S'C:\\web2py\\applications\\engfarmo\\models\\0_db.py'
+p5
+sS'code'
+p6
+S'# -*- coding: utf-8 -*-\n\n#########################################################################\n## This scaffolding model makes your app work on Google App Engine too\n## File is released under public domain and you can use without limitations\n#########################################################################\n\n## if SSL/HTTPS is properly configured and you want all HTTP requests to\n## be redirected to HTTPS, uncomment the line below:\n# request.requires_https()\n\nif not request.env.web2py_runtime_gae:\n    ## if NOT running on Google App Engine use SQLite or other DB\n    db = DAL(\'sqlite://storage.sqlite\',pool_size=1,check_reserved=[\'all\'])\nelse:\n    ## connect to Google BigTable (optional \'google:datastore://namespace\')\n    db = DAL(\'google:datastore\')\n    ## store sessions and tickets there\n    session.connect(request, response, db=db)\n    ## or store session in Memcache, Redis, etc.\n    ## from gluon.contrib.memdb import MEMDB\n    ## from google.appengine.api.memcache import Client\n    ## session.connect(request, response, db = MEMDB(Client()))\n\n## by default give a view/generic.extension to all actions from localhost\n## none otherwise. a pattern can be \'controller/function.extension\'\nresponse.generic_patterns = [\'*\'] if request.is_local else []\n## (optional) optimize handling of static files\n# response.optimize_css = \'concat,minify,inline\'\n# response.optimize_js = \'concat,minify,inline\'\n## (optional) static assets folder versioning\n# response.static_version = \'0.0.0\'\n#########################################################################\n## Here is sample code if you need for\n## - email capabilities\n## - authentication (registration, login, logout, ... )\n## - authorization (role based authorization)\n## - services (xml, csv, json, xmlrpc, jsonrpc, amf, rss)\n## - old style crud actions\n## (more options discussed in gluon/tools.py)\n#########################################################################\n\nfrom gluon.tools import Auth, Crud, Service, PluginManager, prettydate\nauth = Auth(db)\ncrud, service, plugins = Crud(db), Service(), PluginManager()\n\n##### adicionar campos a tabela auth para mapear a entidade \'farmaceutico\'\nauth.settings.extra_fields[\'auth_user\']=[\n\tField(\'crf\', \'integer\'),\n\tField(\'farmacia\', \'reference farmacia\')\n]\n\n## create all tables needed by auth if not custom tables\nauth.define_tables(username=False, signature=False)\n\nauth_user.crf.requires=IS_NOT_IN_DB(db, auth_user.crf)\n\n## configure email\nmail = auth.settings.mailer\nmail.settings.server = \'logging\' or \'smtp.gmail.com:587\'\nmail.settings.sender = \'you@gmail.com\'\nmail.settings.login = \'username:password\'\n\n## configure auth policy\nauth.settings.registration_requires_verification = False\nauth.settings.registration_requires_approval = False\nauth.settings.reset_password_requires_verification = True\n\n## if you need to use OpenID, Facebook, MySpace, Twitter, Linkedin, etc.\n## register with janrain.com, write your domain:api_key in private/janrain.key\nfrom gluon.contrib.login_methods.rpx_account import use_janrain\nuse_janrain(auth, filename=\'private/janrain.key\')\n\n#########################################################################\n## Define your tables below (or better in another model file) for example\n##\n## >>> db.define_table(\'mytable\',Field(\'myfield\',\'string\'))\n##\n## Fields can be \'string\',\'text\',\'password\',\'integer\',\'double\',\'boolean\'\n##       \'date\',\'time\',\'datetime\',\'blob\',\'upload\', \'reference TABLENAME\'\n## There is an implicit \'id integer autoincrement\' field\n## Consult manual for more options, validators, etc.\n##\n## More API examples for controllers:\n##\n## >>> db.mytable.insert(myfield=\'value\')\n## >>> rows=db(db.mytable.myfield==\'value\').select(db.mytable.ALL)\n## >>> for row in rows: print row.id, row.myfield\n#########################################################################\n\n## after defining tables, uncomment below to enable auditing\n# auth.enable_record_versioning(db)\n\ndb.define_table(\'doenca_cronica\',\n    #Field(\'cid10\', length=10),\n    Field(\'nome\', required=True),\n    format=\'%(nome)s\'\n)\n\ndb.doenca_cronica.nome.requires=[IS_NOT_EMPTY(), IS_NOT_IN_DB(db, \'doenca_cronica.nome\')]\n\ndb.define_table(\'alergia\',\n    Field(\'nome\', required=True),\n    format=\'%(nome)s\'\n)\n\ndb.alergia.nome.requires=[IS_NOT_EMPTY(), IS_NOT_IN_DB(db, \'alergia.nome\')]\n\ndb.define_table(\'tratamento\',\n    Field(\'descricao\', \'text\', required=True),\n    format=\'%(descricao)s\'\n)\n\ndb.tratamento.descricao.requires=[IS_NOT_EMPTY(), IS_NOT_IN_DB(db, \'tratamento.descricao\')]\n\ndb.define_table(\'sintoma\',\n    #Field(\'cid10\', length=10),\n    Field(\'nome\', required=True),\n    format=\'%(nome)s\'\n)\n\ndb.sintoma.nome.requires=[IS_NOT_EMPTY(), IS_NOT_IN_DB(db, \'sintoma.nome\')]\n\ndb.define_table(\'doenca\',\n    #Field(\'cid10\', length=10),\n    Field(\'nome\', required=True),\n    format=\'%(nome)s\'\n)\n\ndb.doenca.nome.requires=[IS_NOT_EMPTY(), IS_NOT_IN_DB(db, \'doenca.nome\')]\n\ndb.define_table(\'farmacia\',\n    Field(\'cnpj\', length=14, required=True),\n    Field(\'nome\', required=True),\n    Field(\'endereco\', \'text\', required=True),\n    format=\'%(cnpj)s - %(nome)s\'\n)\n\ndb.farmacia.cnpj.requires=[IS_NOT_EMPTY(), IS_NOT_IN_DB(db, \'farmacia.cnpj\')]\ndb.farmacia.nome.requires=[IS_NOT_EMPTY(), IS_NOT_IN_DB(db, \'farmacia.nome\')]\ndb.farmacia.endereco.requires=IS_NOT_EMPTY()\n\ndb.define_table(\'paciente\',\n    Field(\'nome\', length=100, required=True),\n    Field(\'rg\', length=12),\n    Field(\'sexo\', default=\'masculino\'),\n    Field(\'data_nascimento\', \'date\', required=True),\n    Field(\'telefone\', length=15),\n    Field(\'celular\', length=15),\n    Field(\'email\', length=100),\n    Field(\'foto\', \'upload\', length=1024),\n    format=\'%(rg)s - %(nome)s\'\n)\n\ndb.paciente.nome.requires=IS_NOT_EMPTY()\ndb.paciente.rg.requires=IS_NOT_IN_DB(db, \'paciente.rg\')\ndb.paciente.sexo.requires=IS_IN_SET((\'masculino\', \'feminino\'))\ndb.paciente.data_nascimento.requires=[IS_NOT_EMPTY(), \n\tIS_DATE(format=T(\'%d/%m/%Y\'), error_message=\'precisa ser DD-MM-YYYY!\')]\ndb.paciente.email.requires=IS_EMPTY_OR(IS_EMAIL())\ndb.paciente.foto.requires=[IS_EMPTY_OR(IS_IMAGE(extensions=(\'jpeg\',\'png\',\'.gif\'))), \n\tIS_EMPTY_OR(IS_LENGTH(1048576, 1024))]\n\ndb.define_table(\'paciente_has_doenca_cronica\',\n    Field(\'paciente\', \'reference paciente\'),\n    Field(\'doenca_cronica\', \'reference doenca_cronica\')\n)\n\n# inibir duplicidade de tupla na tabela paciente_has_doenca_cronica\n# testar quando estiver construindo o view\n"""\ndb.paciente_has_doenca_cronica.doenca_cronica.requires=IS_NOT_IN_DB(\n\tdb(db.paciente_has_doenca_cronica.paciente==request.vars.paciente), \'paciente_has_doenca_cronica.doenca_cronica\'\n)\n"""\n\n# facilitar operacoes na tabela paciente_has_doenca_cronica\npaciente_and_doenca_cronica = (db.paciente.id==db.paciente_has_doenca_cronica.paciente) & (db.doenca_cronica.id==db.paciente_has_doenca_cronica.doenca_cronica)\n\ndb.define_table(\'doenca_has_sintoma\',\n\tField(\'doenca\', \'reference doenca\'),\n\tField(\'sintoma\', \'reference sintoma\')\n)\n\n# facilitar operacoes na tabela doenca_has_sintoma\ndoenca_and_sintoma = (db.doenca.id==db.doenca_has_sintoma.doenca) & (db.sintoma.id==db.doenca_has_sintoma.sintoma)\n\ndb.define_table(\'doenca_has_tratamento\',\n\tField(\'doenca\', \'reference doenca\'),\n\tField(\'tratamento\', \'reference tratamento\')\n)\n\n# facilitar operacoes na tabela doenca_has_tratamento\ndoenca_and_tratamento = (db.doenca.id==db.doenca_has_tratamento.doenca) & (db.tratamento.id==db.doenca_has_tratamento.tratamento)\n\ndb.define_table(\'paciente_has_alergia\',\n\tField(\'paciente\', \'reference paciente\'),\n\tField(\'alergia\', \'reference alergia\')\n)\n\n# facilitar operacoes na tabela paciente_has_alergia\npaciente_and_alergia = (db.paciente.id==db.paciente_has_alergia.paciente) & (db.alergia.id==db.paciente_has_alergia.alergia)'
+p7
+sS'snapshot'
+p8
+(dp9
+S'exception'
+p10
+(dp11
+S'__hash__'
+p12
+S"<method-wrapper '__hash__' of exceptions.NameError object>"
+p13
+sS'__setattr__'
+p14
+S"<method-wrapper '__setattr__' of exceptions.NameError object>"
+p15
+sS'__reduce_ex__'
+p16
+S'<built-in method __reduce_ex__ of exceptions.NameError object>'
+p17
+sS'__getslice__'
+p18
+S"<method-wrapper '__getslice__' of exceptions.NameError object>"
+p19
+sS'__getitem__'
+p20
+S"<method-wrapper '__getitem__' of exceptions.NameError object>"
+p21
+sS'__setstate__'
+p22
+S'<built-in method __setstate__ of exceptions.NameError object>'
+p23
+sS'__reduce__'
+p24
+S'<built-in method __reduce__ of exceptions.NameError object>'
+p25
+sS'__str__'
+p26
+S"<method-wrapper '__str__' of exceptions.NameError object>"
+p27
+sS'__format__'
+p28
+S'<built-in method __format__ of exceptions.NameError object>'
+p29
+sS'__getattribute__'
+p30
+S"<method-wrapper '__getattribute__' of exceptions.NameError object>"
+p31
+sS'__class__'
+p32
+S"<type 'exceptions.NameError'>"
+p33
+sS'__unicode__'
+p34
+S'<built-in method __unicode__ of exceptions.NameError object>'
+p35
+sS'__delattr__'
+p36
+S"<method-wrapper '__delattr__' of exceptions.NameError object>"
+p37
+sS'__subclasshook__'
+p38
+S'<built-in method __subclasshook__ of type object>'
+p39
+sS'__repr__'
+p40
+S"<method-wrapper '__repr__' of exceptions.NameError object>"
+p41
+sS'args'
+p42
+S'("name \'auth_user\' is not defined",)'
+p43
+sS'__dict__'
+p44
+S'{}'
+p45
+sS'__sizeof__'
+p46
+S'<built-in method __sizeof__ of exceptions.NameError object>'
+p47
+sS'__doc__'
+p48
+S"'Name not found globally.'"
+p49
+sS'__init__'
+p50
+S"<method-wrapper '__init__' of exceptions.NameError object>"
+p51
+sS'__new__'
+p52
+S'<built-in method __new__ of type object>'
+p53
+ssS'evalue'
+p54
+S"name 'auth_user' is not defined"
+p55
+sS'request'
+p56
+cgluon.html
+XML_unpickle
+p57
+(S's\xac\\\x00\x00<div><table><tr><td style="font-weight:bold;vertical-align:top;">ajax</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">application</td><td style="vertical-align:top;">:</td><td><div>engfarmo</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">args</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>db</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cid</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">client</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">controller</td><td style="vertical-align:top;">:</td><td><div>appadmin</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cookies</td><td style="vertical-align:top;">:</td><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">session_id_admin</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1-5ce0178b-5197-4db7-ac74-7ce108ca8787<table><tr><td style="font-weight:bold;vertical-align:top;">comment</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">domain</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">expires</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">httponly</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">max-age</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">path</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">secure</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">version</td><td style="vertical-align:top;">:</td><td><div></div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_id_engfarmo</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1-5e2596a9-0a2c-4bb7-85a6-6b683569cb8c<table><tr><td style="font-weight:bold;vertical-align:top;">comment</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">domain</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">expires</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">httponly</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">max-age</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">path</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">secure</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">version</td><td style="vertical-align:top;">:</td><td><div></div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_id_welcome</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1-aa7b94ac-9378-4c4e-bc51-5748b9365859<table><tr><td style="font-weight:bold;vertical-align:top;">comment</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">domain</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">expires</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">httponly</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">max-age</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">path</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">secure</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">version</td><td style="vertical-align:top;">:</td><td><div></div></td></tr></table></div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">env</td><td style="vertical-align:top;">:</td><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">HTTP_ACCEPT</td><td style="vertical-align:top;">:</td><td><div>text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_ACCEPT_ENCODING</td><td style="vertical-align:top;">:</td><td><div>gzip, deflate</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_ACCEPT_LANGUAGE</td><td style="vertical-align:top;">:</td><td><div>pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_CACHE_CONTROL</td><td style="vertical-align:top;">:</td><td><div>max-age=0</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_CONNECTION</td><td style="vertical-align:top;">:</td><td><div>keep-alive</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_COOKIE</td><td style="vertical-align:top;">:</td><td><div>session_id_welcome=127.0.0.1-aa7b94ac-9378-4c4e-bc51-5748b9365859; session_id_admin=127.0.0.1-5ce0178b-5197-4db7-ac74-7ce108ca8787; session_id_engfarmo=127.0.0.1-5e2596a9-0a2c-4bb7-85a6-6b683569cb8c</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_HOST</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1:8000</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_REFERER</td><td style="vertical-align:top;">:</td><td><div>http://127.0.0.1:8000/engfarmo/appadmin/index</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">HTTP_USER_AGENT</td><td style="vertical-align:top;">:</td><td><div>Mozilla/5.0 (Windows NT 6.2; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">PATH_INFO</td><td style="vertical-align:top;">:</td><td><div>/engfarmo/appadmin/select/db</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">QUERY_STRING</td><td style="vertical-align:top;">:</td><td><div>query=db.auth_user.id%3E0</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">REMOTE_ADDR</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">REMOTE_PORT</td><td style="vertical-align:top;">:</td><td><div>60595</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">REQUEST_METHOD</td><td style="vertical-align:top;">:</td><td><div>GET</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">SCRIPT_NAME</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">SERVER_NAME</td><td style="vertical-align:top;">:</td><td><div>wadama</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">SERVER_PORT</td><td style="vertical-align:top;">:</td><td><div>8000</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">SERVER_PROTOCOL</td><td style="vertical-align:top;">:</td><td><div>HTTP/1.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">SERVER_SOFTWARE</td><td style="vertical-align:top;">:</td><td><div>Rocket 1.2.6</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">app_folders</td><td style="vertical-align:top;">:</td><td><div>set([&#x27;C:\\\\web2py\\\\applications\\\\admin\\\\&#x27;, &#x27;C:\\\\web2py\\\\applications\\\\welcome\\\\&#x27;, &#x27;C:\\\\web2py\\\\applications\\\\engfarmo\\\\&#x27;])</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">applications_parent</td><td style="vertical-align:top;">:</td><td><div>C:\\web2py</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cmd_args</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cmd_options</td><td style="vertical-align:top;">:</td><td><div>&lt;Values at 0x2ff4328: {&#x27;verbose&#x27;: False, &#x27;ip&#x27;: &#x27;127.0.0.1&#x27;, &#x27;debuglevel&#x27;: 30, &#x27;with_scheduler&#x27;: False, &#x27;ips&#x27;: [&#x27;fe80::490d:3704:8d63:fada%12&#x27;, &#x27;fe80::2076:578d:cbd2:43c%40&#x27;, &#x27;10.37.159.111&#x27;, &#x27;192.168.56.1&#x27;], &#x27;shutdown_timeout&#x27;: 5, &#x27;taskbar&#x27;: False, &#x27;with_coverage&#x27;: False, &#x27;port&#x27;: 8000, &#x27;maxthreads&#x27;: None, &#x27;softcron&#x27;: False, &#x27;server_name&#x27;: &#x27;wadama&#x27;, &#x27;bpython&#x27;: False, &#x27;nogui&#x27;: False, &#x27;pid_filename&#x27;: &#x27;httpserver.pid&#x27;, &#x27;extcron&#x27;: False, &#x27;runcron&#x27;: False, &#x27;run_system_tests&#x27;: False, &#x27;test&#x27;: None, &#x27;folder&#x27;: &#x27;C:\\\\web2py&#x27;, &#x27;config&#x27;: &#x27;&#x27;, &#x27;minthreads&#x27;: None, &#x27;shell&#x27;: None, &#x27;run&#x27;: &#x27;&#x27;, &#x27;log_filename&#x27;: &#x27;httpserver.log&#x27;, &#x27;profiler_dir&#x27;: None, &#x27;args&#x27;: [&#x27;&#x27;], &#x27;socket_timeout&#x27;: 5, &#x27;ssl_ca_certificate&#x27;: None, &#x27;scheduler&#x27;: None, &#x27;interfaces&#x27;: None, &#x27;ssl_private_key&#x27;: &#x27;&#x27;, &#x27;scheduler_groups&#x27;: None, &#x27;password&#x27;: &#x27;&lt;ask&gt;&#x27;, &#x27;request_queue_size&#x27;: 5, &#x27;ssl_certificate&#x27;: &#x27;&#x27;, &#x27;cronjob&#x27;: False, &#x27;numthreads&#x27;: None, &#x27;quiet&#x27;: False, &#x27;import_models&#x27;: False, &#x27;timeout&#x27;: 10, &#x27;plain&#x27;: False, &#x27;nobanner&#x27;: False}&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">db_sessions</td><td style="vertical-align:top;">:</td><td><div>set([])</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">debugging</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">gluon_parent</td><td style="vertical-align:top;">:</td><td><div>C:\\web2py</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_accept</td><td style="vertical-align:top;">:</td><td><div>text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_accept_encoding</td><td style="vertical-align:top;">:</td><td><div>gzip, deflate</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_accept_language</td><td style="vertical-align:top;">:</td><td><div>pt-BR,pt;q=0.8,en-US;q=0.5,en;q=0.3</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_cache_control</td><td style="vertical-align:top;">:</td><td><div>max-age=0</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_connection</td><td style="vertical-align:top;">:</td><td><div>keep-alive</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_cookie</td><td style="vertical-align:top;">:</td><td><div>session_id_welcome=127.0.0.1-aa7b94ac-9378-4c4e-bc51-5748b9365859; session_id_admin=127.0.0.1-5ce0178b-5197-4db7-ac74-7ce108ca8787; session_id_engfarmo=127.0.0.1-5e2596a9-0a2c-4bb7-85a6-6b683569cb8c</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_host</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1:8000</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_referer</td><td style="vertical-align:top;">:</td><td><div>http://127.0.0.1:8000/engfarmo/appadmin/index</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">http_user_agent</td><td style="vertical-align:top;">:</td><td><div>Mozilla/5.0 (Windows NT 6.2; WOW64; rv:27.0) Gecko/20100101 Firefox/27.0</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_jython</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_pypy</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_source</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">local_hosts</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>10.37.159.111</div></td></tr><tr><td><div>::ffff:127.0.0.1</div></td></tr><tr><td><div>::1</div></td></tr><tr><td><div>fe80::2076:578d:cbd2:43c%40</div></td></tr><tr><td><div>wadama</div></td></tr><tr><td><div>fe80::490d:3704:8d63:fada%12</div></td></tr><tr><td><div>127.0.0.1</div></td></tr><tr><td><div>192.168.56.1</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">path_info</td><td style="vertical-align:top;">:</td><td><div>/engfarmo/appadmin/select/db</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">query_string</td><td style="vertical-align:top;">:</td><td><div>query=db.auth_user.id%3E0</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">remote_addr</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">remote_port</td><td style="vertical-align:top;">:</td><td><div>60595</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">request_method</td><td style="vertical-align:top;">:</td><td><div>GET</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">request_uri</td><td style="vertical-align:top;">:</td><td><div>/engfarmo/appadmin/select/db?query=db.auth_user.id%3E0</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">script_name</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">server_name</td><td style="vertical-align:top;">:</td><td><div>wadama</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">server_port</td><td style="vertical-align:top;">:</td><td><div>8000</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">server_protocol</td><td style="vertical-align:top;">:</td><td><div>HTTP/1.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">server_software</td><td style="vertical-align:top;">:</td><td><div>Rocket 1.2.6</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">web2py_path</td><td style="vertical-align:top;">:</td><td><div>C:\\web2py</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">web2py_version</td><td style="vertical-align:top;">:</td><td><div>2.8.2-stable+timestamp.2013.11.28.13.54.07</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.errors</td><td style="vertical-align:top;">:</td><td><div>&lt;open file &#x27;&lt;stderr&gt;&#x27;, mode &#x27;w&#x27; at 0x01D560D0&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.file_wrapper</td><td style="vertical-align:top;">:</td><td><div>&lt;class wsgiref.util.FileWrapper at 0x021556F8&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.input</td><td style="vertical-align:top;">:</td><td><div>&lt;socket._fileobject object at 0x06A25DB0&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.multiprocess</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.multithread</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.run_once</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.url_scheme</td><td style="vertical-align:top;">:</td><td><div>http</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi.version</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>1</div></td></tr><tr><td><div>0</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_errors</td><td style="vertical-align:top;">:</td><td><div>&lt;open file &#x27;&lt;stderr&gt;&#x27;, mode &#x27;w&#x27; at 0x01D560D0&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_file_wrapper</td><td style="vertical-align:top;">:</td><td><div>&lt;class wsgiref.util.FileWrapper at 0x021556F8&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_input</td><td style="vertical-align:top;">:</td><td><div>&lt;socket._fileobject object at 0x06A25DB0&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_multiprocess</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_multithread</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_run_once</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_url_scheme</td><td style="vertical-align:top;">:</td><td><div>http</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi_version</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>1</div></td></tr><tr><td><div>0</div></td></tr></table></div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">extension</td><td style="vertical-align:top;">:</td><td><div>html</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">folder</td><td style="vertical-align:top;">:</td><td><div>C:\\web2py\\applications\\engfarmo\\</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">function</td><td style="vertical-align:top;">:</td><td><div>select</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">global_settings</td><td style="vertical-align:top;">:</td><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">app_folders</td><td style="vertical-align:top;">:</td><td><div>set([&#x27;C:\\\\web2py\\\\applications\\\\admin\\\\&#x27;, &#x27;C:\\\\web2py\\\\applications\\\\welcome\\\\&#x27;, &#x27;C:\\\\web2py\\\\applications\\\\engfarmo\\\\&#x27;])</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">applications_parent</td><td style="vertical-align:top;">:</td><td><div>C:\\web2py</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cmd_args</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cmd_options</td><td style="vertical-align:top;">:</td><td><div>&lt;Values at 0x2ff4328: {&#x27;verbose&#x27;: False, &#x27;ip&#x27;: &#x27;127.0.0.1&#x27;, &#x27;debuglevel&#x27;: 30, &#x27;with_scheduler&#x27;: False, &#x27;ips&#x27;: [&#x27;fe80::490d:3704:8d63:fada%12&#x27;, &#x27;fe80::2076:578d:cbd2:43c%40&#x27;, &#x27;10.37.159.111&#x27;, &#x27;192.168.56.1&#x27;], &#x27;shutdown_timeout&#x27;: 5, &#x27;taskbar&#x27;: False, &#x27;with_coverage&#x27;: False, &#x27;port&#x27;: 8000, &#x27;maxthreads&#x27;: None, &#x27;softcron&#x27;: False, &#x27;server_name&#x27;: &#x27;wadama&#x27;, &#x27;bpython&#x27;: False, &#x27;nogui&#x27;: False, &#x27;pid_filename&#x27;: &#x27;httpserver.pid&#x27;, &#x27;extcron&#x27;: False, &#x27;runcron&#x27;: False, &#x27;run_system_tests&#x27;: False, &#x27;test&#x27;: None, &#x27;folder&#x27;: &#x27;C:\\\\web2py&#x27;, &#x27;config&#x27;: &#x27;&#x27;, &#x27;minthreads&#x27;: None, &#x27;shell&#x27;: None, &#x27;run&#x27;: &#x27;&#x27;, &#x27;log_filename&#x27;: &#x27;httpserver.log&#x27;, &#x27;profiler_dir&#x27;: None, &#x27;args&#x27;: [&#x27;&#x27;], &#x27;socket_timeout&#x27;: 5, &#x27;ssl_ca_certificate&#x27;: None, &#x27;scheduler&#x27;: None, &#x27;interfaces&#x27;: None, &#x27;ssl_private_key&#x27;: &#x27;&#x27;, &#x27;scheduler_groups&#x27;: None, &#x27;password&#x27;: &#x27;&lt;ask&gt;&#x27;, &#x27;request_queue_size&#x27;: 5, &#x27;ssl_certificate&#x27;: &#x27;&#x27;, &#x27;cronjob&#x27;: False, &#x27;numthreads&#x27;: None, &#x27;quiet&#x27;: False, &#x27;import_models&#x27;: False, &#x27;timeout&#x27;: 10, &#x27;plain&#x27;: False, &#x27;nobanner&#x27;: False}&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">db_sessions</td><td style="vertical-align:top;">:</td><td><div>set([])</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">debugging</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">gluon_parent</td><td style="vertical-align:top;">:</td><td><div>C:\\web2py</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_jython</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_pypy</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_source</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">local_hosts</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>10.37.159.111</div></td></tr><tr><td><div>::ffff:127.0.0.1</div></td></tr><tr><td><div>::1</div></td></tr><tr><td><div>fe80::2076:578d:cbd2:43c%40</div></td></tr><tr><td><div>wadama</div></td></tr><tr><td><div>fe80::490d:3704:8d63:fada%12</div></td></tr><tr><td><div>127.0.0.1</div></td></tr><tr><td><div>192.168.56.1</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">web2py_version</td><td style="vertical-align:top;">:</td><td><div>2.8.2-stable+timestamp.2013.11.28.13.54.07</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_https</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_local</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">is_restful</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">now</td><td style="vertical-align:top;">:</td><td><div>datetime.datetime(2014, 3, 25, 9, 52, 46, 244000)</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">raw_args</td><td style="vertical-align:top;">:</td><td><div>db</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">raw_extension</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">url</td><td style="vertical-align:top;">:</td><td><div>/engfarmo/appadmin/select/db</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">utcnow</td><td style="vertical-align:top;">:</td><td><div>datetime.datetime(2014, 3, 25, 12, 52, 46, 244000)</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">uuid</td><td style="vertical-align:top;">:</td><td><div>engfarmo/127.0.0.1.2014-03-25.09-52-46.810add70-ebfb-4fbc-a9be-3167ef783bd8</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">wsgi</td><td style="vertical-align:top;">:</td><td><div>&lt;gluon.main.LazyWSGI object at 0x06DF11B0&gt;</div></td></tr></table></div>'
+tRp58
+sS'frames'
+p59
+(lp60
+(dp61
+S'file'
+p62
+S'C:\\home\\mdipierro\\make_web2py\\web2py\\gluon\\restricted.py'
+p63
+sS'dump'
+p64
+(dp65
+sS'lnum'
+p66
+I217
+sS'lines'
+p67
+(dp68
+sS'call'
+p69
+S"(code='# -*- coding: utf-8 -*-\\n\\n#######################... (db.alergia.id==db.paciente_has_alergia.alergia)', environment={'A': <class 'gluon.html.A'>, 'ANY_OF': <class 'gluon.validators.ANY_OF'>, 'Auth': <class 'gluon.tools.Auth'>, 'B': <class 'gluon.html.B'>, 'BEAUTIFY': <class 'gluon.html.BEAUTIFY'>, 'BODY': <class 'gluon.html.BODY'>, 'BR': <class 'gluon.html.BR'>, 'BUTTON': <class 'gluon.html.BUTTON'>, 'CAT': <class 'gluon.html.CAT'>, 'CENTER': <class 'gluon.html.CENTER'>, ...}, layer=r'C:\\web2py\\applications\\engfarmo\\models\\0_db.py')"
+p70
+sS'func'
+p71
+S'restricted'
+p72
+sa(dp73
+g62
+S'C:\\web2py\\applications\\engfarmo\\models\\0_db.py'
+p74
+sg64
+(dp75
+S'auth_user'
+p76
+S'undefined'
+p77
+sS'db'
+p78
+S'<DAL uri="sqlite://storage.sqlite">'
+p79
+sS'IS_NOT_IN_DB'
+p80
+S"<class 'gluon.validators.IS_NOT_IN_DB'>"
+p81
+ssg66
+I56
+sg67
+(dp82
+I51
+S']'
+sI52
+S''
+sI53
+S'## create all tables needed by auth if not custom tables'
+p83
+sI54
+S'auth.define_tables(username=False, signature=False)'
+p84
+sI55
+S''
+sI56
+S'auth_user.crf.requires=IS_NOT_IN_DB(db, auth_user.crf)'
+p85
+sI57
+S''
+sI58
+S'## configure email'
+p86
+sI59
+S'mail = auth.settings.mailer'
+p87
+sI60
+S"mail.settings.server = 'logging' or 'smtp.gmail.com:587'"
+p88
+ssg69
+S'()'
+p89
+sg71
+S'<module>'
+p90
+sasS'pyver'
+p91
+S'Python 2.7.5: C:\\web2py\\web2py.exe (prefix: )'
+p92
+sS'session'
+p93
+g57
+(S's@\x01\x00\x00<div><table><tr><td style="font-weight:bold;vertical-align:top;">last_orderby</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">last_query</td><td style="vertical-align:top;">:</td><td><div>db.auth_permission.id&gt;0</div></td></tr></table></div>'
+tRp94
+sS'etype'
+p95
+S"<type 'exceptions.NameError'>"
+p96
+sS'date'
+p97
+S'Tue Mar 25 09:52:46 2014'
+p98
+sS'response'
+p99
+g57
+(S's\xbf\x16\x00\x00<div><table><tr><td style="font-weight:bold;vertical-align:top;">body</td><td style="vertical-align:top;">:</td><td><div>&lt;cStringIO.StringO object at 0x070B30A0&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">cookies</td><td style="vertical-align:top;">:</td><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">session_id_engfarmo</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1-5e2596a9-0a2c-4bb7-85a6-6b683569cb8c<table><tr><td style="font-weight:bold;vertical-align:top;">comment</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">domain</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">expires</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">httponly</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">max-age</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">path</td><td style="vertical-align:top;">:</td><td><div>/</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">secure</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">version</td><td style="vertical-align:top;">:</td><td><div></div></td></tr></table></div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">delimiters</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>{{</div></td></tr><tr><td><div>}}</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">files</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">flash</td><td style="vertical-align:top;">:</td><td><div></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">generic_patterns</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>*</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">headers</td><td style="vertical-align:top;">:</td><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">X-Powered-By</td><td style="vertical-align:top;">:</td><td><div>web2py</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">menu</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">meta</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">models_to_run</td><td style="vertical-align:top;">:</td><td><div><table><tr><td><div>^\\w+\\.py$</div></td></tr><tr><td><div>^appadmin/\\w+\\.py$</div></td></tr><tr><td><div>^appadmin/select/\\w+\\.py$</div></td></tr></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">postprocessing</td><td style="vertical-align:top;">:</td><td><div><table></table></div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_client</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_cookie_compression_level</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_cookie_expires</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_cookie_key</td><td style="vertical-align:top;">:</td><td><div>None</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_data_name</td><td style="vertical-align:top;">:</td><td><div>session_data_engfarmo</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_file</td><td style="vertical-align:top;">:</td><td><div>&lt;open file &#x27;C:\\\\web2py\\\\applications\\\\engfarmo\\\\sessions\\\\127.0.0.1-5e2596a9-0a2c-4bb7-85a6-6b683569cb8c&#x27;, mode &#x27;rb+&#x27; at 0x06D7CAC8&gt;</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_filename</td><td style="vertical-align:top;">:</td><td><div>C:\\web2py\\applications\\engfarmo\\sessions\\127.0.0.1-5e2596a9-0a2c-4bb7-85a6-6b683569cb8c</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_hash</td><td style="vertical-align:top;">:</td><td><div>b998c6b51ae64d9089888ee09c03ae86</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_id</td><td style="vertical-align:top;">:</td><td><div>127.0.0.1-5e2596a9-0a2c-4bb7-85a6-6b683569cb8c</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_id_name</td><td style="vertical-align:top;">:</td><td><div>session_id_engfarmo</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_locked</td><td style="vertical-align:top;">:</td><td><div>True</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_masterapp</td><td style="vertical-align:top;">:</td><td><div>engfarmo</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_new</td><td style="vertical-align:top;">:</td><td><div>False</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">session_storage_type</td><td style="vertical-align:top;">:</td><td><div>file</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">status</td><td style="vertical-align:top;">:</td><td><div>200</div></td></tr><tr><td style="font-weight:bold;vertical-align:top;">view</td><td style="vertical-align:top;">:</td><td><div>appadmin/select.html</div></td></tr></table></div>'
+tRp100
+sS'locals'
+p101
+(dp102
+S'Service'
+p103
+S"<class 'gluon.tools.Service'>"
+p104
+sS'OBJECT'
+p105
+S"<class 'gluon.html.OBJECT'>"
+p106
+sS'SQLDB'
+p107
+S"<class 'gluon.dal.DAL'>"
+p108
+sg93
+S"<Storage {'last_query': 'db.auth_permission.id>0...c9106', 'd7610c42-7add-4415-8c18-0e11c0bb2628']}>"
+p109
+sS'LINK'
+p110
+S"<class 'gluon.html.LINK'>"
+p111
+sS'BR'
+p112
+S"<class 'gluon.html.BR'>"
+p113
+sS'local_import'
+p114
+S'<function <lambda>>'
+p115
+sS'OPTGROUP'
+p116
+S"<class 'gluon.html.OPTGROUP'>"
+p117
+sS'__package__'
+p118
+S'None'
+p119
+sS'PRE'
+p120
+S"<class 'gluon.html.PRE'>"
+p121
+sS'IS_INT_IN_RANGE'
+p122
+S"<class 'gluon.validators.IS_INT_IN_RANGE'>"
+p123
+sS'IS_LOWER'
+p124
+S"<class 'gluon.validators.IS_LOWER'>"
+p125
+sS'IS_STRONG'
+p126
+S"<class 'gluon.validators.IS_STRONG'>"
+p127
+sS'cache'
+p128
+S'<gluon.cache.Cache object>'
+p129
+sS'IS_IN_DB'
+p130
+S"<class 'gluon.validators.IS_IN_DB'>"
+p131
+sS'TAG'
+p132
+S'<gluon.html.__TAG__ object>'
+p133
+sS'SQLField'
+p134
+S"<class 'gluon.dal.Field'>"
+p135
+sS'BODY'
+p136
+S"<class 'gluon.html.BODY'>"
+p137
+sS'IS_DATE_IN_RANGE'
+p138
+S"<class 'gluon.validators.IS_DATE_IN_RANGE'>"
+p139
+sS'TH'
+p140
+S"<class 'gluon.html.TH'>"
+p141
+sS'URL'
+p142
+S'<function URL>'
+p143
+sS'__file__'
+p144
+S"r'C:\\web2py\\applications\\engfarmo\\models\\0_db.py'"
+p145
+sS'db'
+p146
+S'<DAL uri="sqlite://storage.sqlite">'
+p147
+sS'auth'
+p148
+S'<gluon.tools.Auth object>'
+p149
+sS'P'
+S"<class 'gluon.html.P'>"
+p150
+sS'TFOOT'
+p151
+S"<class 'gluon.html.TFOOT'>"
+p152
+sS'XHTML'
+p153
+S"<class 'gluon.html.XHTML'>"
+p154
+sS'ON'
+p155
+S'True'
+p156
+sS'OL'
+p157
+S"<class 'gluon.html.OL'>"
+p158
+sS'TEXTAREA'
+p159
+S"<class 'gluon.html.TEXTAREA'>"
+p160
+sS'MENU'
+p161
+S"<class 'gluon.html.MENU'>"
+p162
+sS'LOAD'
+p163
+S'<function LOAD>'
+p164
+sS'CODE'
+p165
+S"<class 'gluon.html.CODE'>"
+p166
+sS'HTTP'
+p167
+S"<class 'gluon.http.HTTP'>"
+p168
+sS'HR'
+p169
+S"<class 'gluon.html.HR'>"
+p170
+sS'IS_DATETIME'
+p171
+S"<class 'gluon.validators.IS_DATETIME'>"
+p172
+sS'HEAD'
+p173
+S"<class 'gluon.html.HEAD'>"
+p174
+sS'LABEL'
+p175
+S"<class 'gluon.html.LABEL'>"
+p176
+sS'CLEANUP'
+p177
+S"<class 'gluon.validators.CLEANUP'>"
+p178
+sS'plugins'
+p179
+S'<gluon.tools.PluginManager object>'
+p180
+sS'SELECT'
+p181
+S"<class 'gluon.html.SELECT'>"
+p182
+sS'CENTER'
+p183
+S"<class 'gluon.html.CENTER'>"
+p184
+sS'prettydate'
+p185
+S'<function prettydate>'
+p186
+sS'Crud'
+p187
+S"<class 'gluon.tools.Crud'>"
+p188
+sS'Auth'
+p189
+S"<class 'gluon.tools.Auth'>"
+p190
+sS'__builtins__'
+p191
+S"{'ArithmeticError': <type 'exceptions.ArithmeticError'>, 'AssertionError': <type 'exceptions.AssertionError'>, 'AttributeError': <type 'exceptions.AttributeError'>, 'BaseException': <type 'exceptions.BaseException'>, 'BufferError': <type 'exceptions.BufferError'>, 'BytesWarning': <type 'exceptions.BytesWarning'>, 'DeprecationWarning': <type 'exceptions.DeprecationWarning'>, 'EOFError': <type 'exceptions.EOFError'>, 'Ellipsis': Ellipsis, 'EnvironmentError': <type 'exceptions.EnvironmentError'>, ...}"
+p192
+sS'HTML'
+p193
+S"<class 'gluon.html.HTML'>"
+p194
+sS'SQLFORM'
+p195
+S"<class 'gluon.sqlhtml.SQLFORM'>"
+p196
+sS'EM'
+p197
+S"<class 'gluon.html.EM'>"
+p198
+sS'redirect'
+p199
+S'<function redirect>'
+p200
+sS'FIELDSET'
+p201
+S"<class 'gluon.html.FIELDSET'>"
+p202
+sS'IS_EQUAL_TO'
+p203
+S"<class 'gluon.validators.IS_EQUAL_TO'>"
+p204
+sS'embed64'
+p205
+S'<function embed64>'
+p206
+sS'IS_LIST_OF'
+p207
+S"<class 'gluon.validators.IS_LIST_OF'>"
+p208
+sS'__name__'
+p209
+S"'__restricted__'"
+p210
+sS'EMBED'
+p211
+S"<class 'gluon.html.EMBED'>"
+p212
+sS'FORM'
+p213
+S"<class 'gluon.html.FORM'>"
+p214
+sS'H2'
+p215
+S"<class 'gluon.html.H2'>"
+p216
+sS'H3'
+p217
+S"<class 'gluon.html.H3'>"
+p218
+sS'BUTTON'
+p219
+S"<class 'gluon.html.BUTTON'>"
+p220
+sS'H1'
+p221
+S"<class 'gluon.html.H1'>"
+p222
+sS'H6'
+p223
+S"<class 'gluon.html.H6'>"
+p224
+sS'H4'
+p225
+S"<class 'gluon.html.H4'>"
+p226
+sS'H5'
+p227
+S"<class 'gluon.html.H5'>"
+p228
+sS'UL'
+p229
+S"<class 'gluon.html.UL'>"
+p230
+sS'IS_UPPER'
+p231
+S"<class 'gluon.validators.IS_UPPER'>"
+p232
+sS'xmlescape'
+p233
+S'<function xmlescape>'
+p234
+sS'IS_TIME'
+p235
+S"<class 'gluon.validators.IS_TIME'>"
+p236
+sS'OPTION'
+p237
+S"<class 'gluon.html.OPTION'>"
+p238
+sS'TITLE'
+p239
+S"<class 'gluon.html.TITLE'>"
+p240
+sS'CRYPT'
+p241
+S"<class 'gluon.validators.CRYPT'>"
+p242
+sS'IS_EMPTY_OR'
+p243
+S"<class 'gluon.validators.IS_EMPTY_OR'>"
+p244
+sS'MARKMIN'
+p245
+S"<class 'gluon.html.MARKMIN'>"
+p246
+sS'INPUT'
+p247
+S"<class 'gluon.html.INPUT'>"
+p248
+sS'STRONG'
+p249
+S"<class 'gluon.html.STRONG'>"
+p250
+sS'COL'
+p251
+S"<class 'gluon.html.COL'>"
+p252
+sS'service'
+p253
+S'<gluon.tools.Service object>'
+p254
+sS'SCRIPT'
+p255
+S"<class 'gluon.html.SCRIPT'>"
+p256
+sS'TABLE'
+p257
+S"<class 'gluon.html.TABLE'>"
+p258
+sS'IS_IPV4'
+p259
+S"<class 'gluon.validators.IS_IPV4'>"
+p260
+sS'IS_LENGTH'
+p261
+S"<class 'gluon.validators.IS_LENGTH'>"
+p262
+sS'IS_IPV6'
+p263
+S"<class 'gluon.validators.IS_IPV6'>"
+p264
+sS'XML'
+p265
+S"<class 'gluon.html.XML'>"
+p266
+sS'B'
+S"<class 'gluon.html.B'>"
+p267
+sS'IMG'
+p268
+S"<class 'gluon.html.IMG'>"
+p269
+sS'SQLTABLE'
+p270
+S"<class 'gluon.sqlhtml.SQLTABLE'>"
+p271
+sS'IS_MATCH'
+p272
+S"<class 'gluon.validators.IS_MATCH'>"
+p273
+sS'IS_ALPHANUMERIC'
+p274
+S"<class 'gluon.validators.IS_ALPHANUMERIC'>"
+p275
+sS'SPAN'
+p276
+S"<class 'gluon.html.SPAN'>"
+p277
+sS'IS_JSON'
+p278
+S"<class 'gluon.validators.IS_JSON'>"
+p279
+sS'IS_IPADDRESS'
+p280
+S"<class 'gluon.validators.IS_IPADDRESS'>"
+p281
+sS'IS_SLUG'
+p282
+S"<class 'gluon.validators.IS_SLUG'>"
+p283
+sS'BEAUTIFY'
+p284
+S"<class 'gluon.html.BEAUTIFY'>"
+p285
+sS'META'
+p286
+S"<class 'gluon.html.META'>"
+p287
+sS'IS_DATE'
+p288
+S"<class 'gluon.validators.IS_DATE'>"
+p289
+sS'IS_EMAIL'
+p290
+S"<class 'gluon.validators.IS_EMAIL'>"
+p291
+sS'IS_NOT_EMPTY'
+p292
+S"<class 'gluon.validators.IS_NOT_EMPTY'>"
+p293
+sg56
+S"<Storage {'_vars': None, 'function': 'select', '...folder': 'C:\\\\web2py\\\\applications\\\\engfarmo\\\\'}>"
+p294
+sS'TBODY'
+p295
+S"<class 'gluon.html.TBODY'>"
+p296
+sS'CAT'
+p297
+S"<class 'gluon.html.CAT'>"
+p298
+sS'Field'
+p299
+S"<class 'gluon.dal.Field'>"
+p300
+sS'IS_LIST_OF_EMAILS'
+p301
+S"<class 'gluon.validators.IS_LIST_OF_EMAILS'>"
+p302
+sS'DIV'
+p303
+S"<class 'gluon.html.DIV'>"
+p304
+sS'LEGEND'
+p305
+S"<class 'gluon.html.LEGEND'>"
+p306
+sS'COLGROUP'
+p307
+S"<class 'gluon.html.COLGROUP'>"
+p308
+sS'DAL'
+p309
+S"<class 'gluon.dal.DAL'>"
+p310
+sS'TT'
+p311
+S"<class 'gluon.html.TT'>"
+p312
+sS'TR'
+p313
+S"<class 'gluon.html.TR'>"
+p314
+sS'LI'
+p315
+S"<class 'gluon.html.LI'>"
+p316
+sS'IFRAME'
+p317
+S"<class 'gluon.html.IFRAME'>"
+p318
+sS'TD'
+p319
+S"<class 'gluon.html.TD'>"
+p320
+sS'PluginManager'
+p321
+S"<class 'gluon.tools.PluginManager'>"
+p322
+sS'IS_URL'
+p323
+S"<class 'gluon.validators.IS_URL'>"
+p324
+sS'A'
+S"<class 'gluon.html.A'>"
+p325
+sS'STYLE'
+p326
+S"<class 'gluon.html.STYLE'>"
+p327
+sS'IS_DATETIME_IN_RANGE'
+p328
+S"<class 'gluon.validators.IS_DATETIME_IN_RANGE'>"
+p329
+sS'IS_IMAGE'
+p330
+S"<class 'gluon.validators.IS_IMAGE'>"
+p331
+sS'I'
+S"<class 'gluon.html.I'>"
+p332
+sS'crud'
+p333
+S'<gluon.tools.Crud object>'
+p334
+sS'IS_NOT_IN_DB'
+p335
+S"<class 'gluon.validators.IS_NOT_IN_DB'>"
+p336
+sg99
+S"<Storage {'body': <cStringIO.StringO object at 0... at 0x067925B0>, 'view': 'appadmin/select.html'}>"
+p337
+sS'THEAD'
+p338
+S"<class 'gluon.html.THEAD'>"
+p339
+sS'ANY_OF'
+p340
+S"<class 'gluon.validators.ANY_OF'>"
+p341
+sS'IS_NULL_OR'
+p342
+S"<class 'gluon.validators.IS_EMPTY_OR'>"
+p343
+sS'IS_FLOAT_IN_RANGE'
+p344
+S"<class 'gluon.validators.IS_FLOAT_IN_RANGE'>"
+p345
+sS'IS_EXPR'
+p346
+S"<class 'gluon.validators.IS_EXPR'>"
+p347
+sS'IS_IN_SET'
+p348
+S"<class 'gluon.validators.IS_IN_SET'>"
+p349
+sS'IS_UPLOAD_FILENAME'
+p350
+S"<class 'gluon.validators.IS_UPLOAD_FILENAME'>"
+p351
+sS'IS_DECIMAL_IN_RANGE'
+p352
+S"<class 'gluon.validators.IS_DECIMAL_IN_RANGE'>"
+p353
+sS'T'
+S'<gluon.languages.translator object>'
+p354
+sssS'traceback'
+p355
+S'Traceback (most recent call last):\n  File "/home/mdipierro/make_web2py/web2py/gluon/restricted.py", line 217, in restricted\n  File "C:\\web2py\\applications\\engfarmo\\models\\0_db.py", line 56, in <module>\n    auth_user.crf.requires=IS_NOT_IN_DB(db, auth_user.crf)\nNameError: name \'auth_user\' is not defined\n'
+p356
+s.

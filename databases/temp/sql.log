@@ -1,0 +1,387 @@
+timestamp: 2014-03-21T07:50:50.481000
+CREATE TABLE auth_user(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name CHAR(128),
+    last_name CHAR(128),
+    email CHAR(512),
+    password CHAR(512),
+    registration_key CHAR(512),
+    reset_password_key CHAR(512),
+    registration_id CHAR(512)
+);
+success!
+timestamp: 2014-03-21T07:50:50.588000
+CREATE TABLE auth_group(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role CHAR(512),
+    description TEXT
+);
+success!
+timestamp: 2014-03-21T07:50:50.694000
+CREATE TABLE auth_membership(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES auth_user (id) ON DELETE CASCADE,
+    group_id INTEGER REFERENCES auth_group (id) ON DELETE CASCADE
+);
+success!
+timestamp: 2014-03-21T07:50:50.852000
+CREATE TABLE auth_permission(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id INTEGER REFERENCES auth_group (id) ON DELETE CASCADE,
+    name CHAR(512),
+    table_name CHAR(512),
+    record_id INTEGER
+);
+success!
+timestamp: 2014-03-21T07:50:50.969000
+CREATE TABLE auth_event(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    time_stamp TIMESTAMP,
+    client_ip CHAR(512),
+    user_id INTEGER REFERENCES auth_user (id) ON DELETE CASCADE,
+    origin CHAR(512),
+    description TEXT
+);
+success!
+timestamp: 2014-03-21T07:50:51.159000
+CREATE TABLE auth_cas(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES auth_user (id) ON DELETE CASCADE,
+    created_on TIMESTAMP,
+    service CHAR(512),
+    ticket CHAR(512),
+    renew CHAR(1)
+);
+success!
+timestamp: 2014-03-21T07:50:51.270000
+CREATE TABLE doenca_cronica(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cid10 CHAR(10),
+    nome CHAR(512)
+);
+success!
+timestamp: 2014-03-21T07:54:38.251000
+CREATE TABLE alergia(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome CHAR(512)
+);
+success!
+timestamp: 2014-03-21T07:57:05.257000
+CREATE TABLE tratamento(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    descricao CHAR(512)
+);
+success!
+timestamp: 2014-03-21T08:09:47.221000
+CREATE TABLE sintoma(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cid10 CHAR(10),
+    nome CHAR(512)
+);
+success!
+timestamp: 2014-03-21T08:09:47.352000
+CREATE TABLE doenca(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cid10 CHAR(10),
+    nome CHAR(512)
+);
+success!
+timestamp: 2014-03-21T08:09:47.474000
+CREATE TABLE farmacia(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cnpj CHAR(14),
+    nome CHAR(512),
+    endereco TEXT
+);
+success!
+timestamp: 2014-03-24T10:13:56.272000
+CREATE TABLE paciente(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome CHAR(100),
+    rg CHAR(12),
+    sexo CHAR(1),
+    data_nascimento DATE,
+    telefone CHAR(15),
+    celular CHAR(15),
+    email CHAR(100),
+    foto CHAR(512)
+);
+success!
+success!
+success!
+success!
+timestamp: 2014-03-24T16:17:18.387000
+CREATE TABLE paciente_has_doenca_cronica(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    paciente INTEGER REFERENCES paciente (id) ON DELETE CASCADE,
+    doenca_cronia INTEGER REFERENCES doenca_cronica (id) ON DELETE CASCADE
+);
+success!
+timestamp: 2014-03-24T16:38:31.322000
+ALTER TABLE paciente_has_doenca_cronica ADD doenca_cronica INTEGER REFERENCES doenca_cronica (id) ON DELETE CASCADE;
+success!
+timestamp: 2014-03-24T16:38:31.527000
+CREATE TABLE doenca_has_sintoma(
+    id INTEGER PRIMARY KEY AUTOINCREMENT
+);
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+timestamp: 2014-03-24T16:42:23.608000
+ALTER TABLE doenca_has_sintoma ADD doenca INTEGER REFERENCES doenca (id) ON DELETE CASCADE;
+timestamp: 2014-03-24T16:42:23.729000
+ALTER TABLE doenca_has_sintoma ADD sintoma INTEGER REFERENCES sintoma (id) ON DELETE CASCADE;
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+timestamp: 2014-03-24T21:39:27.208000
+CREATE TABLE doenca_has_tratamento(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    doenca INTEGER REFERENCES doenca (id) ON DELETE CASCADE,
+    tratamento INTEGER REFERENCES tratamento (id) ON DELETE CASCADE
+);
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+timestamp: 2014-03-24T21:42:25.004000
+CREATE TABLE paciente_has_alergia(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    paciente INTEGER REFERENCES paciente (id) ON DELETE CASCADE,
+    alergia INTEGER REFERENCES alergia (id) ON DELETE CASCADE
+);
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+timestamp: 2014-03-25T09:51:46.290000
+ALTER TABLE auth_user ADD farmacia INTEGER REFERENCES farmacia (id) ON DELETE CASCADE;
+timestamp: 2014-03-25T09:51:46.446000
+ALTER TABLE auth_user ADD crf INTEGER;
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!
+success!

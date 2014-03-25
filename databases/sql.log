@@ -1,0 +1,136 @@
+timestamp: 2014-03-25T10:44:59.214000
+CREATE TABLE auth_user(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name CHAR(128),
+    last_name CHAR(128),
+    email CHAR(512),
+    password CHAR(512),
+    registration_key CHAR(512),
+    reset_password_key CHAR(512),
+    registration_id CHAR(512),
+    crf CHAR(512),
+    farmacia INTEGER REFERENCES farmacia (id) ON DELETE CASCADE
+);
+success!
+timestamp: 2014-03-25T10:44:59.355000
+CREATE TABLE auth_group(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role CHAR(512),
+    description TEXT
+);
+success!
+timestamp: 2014-03-25T10:44:59.495000
+CREATE TABLE auth_membership(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES auth_user (id) ON DELETE CASCADE,
+    group_id INTEGER REFERENCES auth_group (id) ON DELETE CASCADE
+);
+success!
+timestamp: 2014-03-25T10:44:59.635000
+CREATE TABLE auth_permission(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id INTEGER REFERENCES auth_group (id) ON DELETE CASCADE,
+    name CHAR(512),
+    table_name CHAR(512),
+    record_id INTEGER
+);
+success!
+timestamp: 2014-03-25T10:44:59.791000
+CREATE TABLE auth_event(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    time_stamp TIMESTAMP,
+    client_ip CHAR(512),
+    user_id INTEGER REFERENCES auth_user (id) ON DELETE CASCADE,
+    origin CHAR(512),
+    description TEXT
+);
+success!
+timestamp: 2014-03-25T10:44:59.916000
+CREATE TABLE auth_cas(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER REFERENCES auth_user (id) ON DELETE CASCADE,
+    created_on TIMESTAMP,
+    service CHAR(512),
+    ticket CHAR(512),
+    renew CHAR(1)
+);
+success!
+timestamp: 2014-03-25T10:45:00.041000
+CREATE TABLE doenca_cronica(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome CHAR(512)
+);
+success!
+timestamp: 2014-03-25T10:45:00.166000
+CREATE TABLE alergia(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome CHAR(512)
+);
+success!
+timestamp: 2014-03-25T10:45:00.353000
+CREATE TABLE tratamento(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    descricao TEXT
+);
+success!
+timestamp: 2014-03-25T10:45:00.493000
+CREATE TABLE sintoma(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome CHAR(512)
+);
+success!
+timestamp: 2014-03-25T10:45:00.618000
+CREATE TABLE doenca(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome CHAR(512)
+);
+success!
+timestamp: 2014-03-25T10:45:00.930000
+CREATE TABLE farmacia(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cnpj CHAR(14),
+    nome CHAR(512),
+    endereco TEXT
+);
+success!
+timestamp: 2014-03-25T10:45:01.071000
+CREATE TABLE paciente(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome CHAR(100),
+    rg CHAR(12),
+    sexo CHAR(512),
+    data_nascimento DATE,
+    telefone CHAR(15),
+    celular CHAR(15),
+    email CHAR(100),
+    foto CHAR(1024)
+);
+success!
+timestamp: 2014-03-25T10:45:01.227000
+CREATE TABLE paciente_has_doenca_cronica(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    paciente INTEGER REFERENCES paciente (id) ON DELETE CASCADE,
+    doenca_cronica INTEGER REFERENCES doenca_cronica (id) ON DELETE CASCADE
+);
+success!
+timestamp: 2014-03-25T10:45:01.585000
+CREATE TABLE doenca_has_sintoma(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    doenca INTEGER REFERENCES doenca (id) ON DELETE CASCADE,
+    sintoma INTEGER REFERENCES sintoma (id) ON DELETE CASCADE
+);
+success!
+timestamp: 2014-03-25T10:45:01.710000
+CREATE TABLE doenca_has_tratamento(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    doenca INTEGER REFERENCES doenca (id) ON DELETE CASCADE,
+    tratamento INTEGER REFERENCES tratamento (id) ON DELETE CASCADE
+);
+success!
+timestamp: 2014-03-25T10:45:01.991000
+CREATE TABLE paciente_has_alergia(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    paciente INTEGER REFERENCES paciente (id) ON DELETE CASCADE,
+    alergia INTEGER REFERENCES alergia (id) ON DELETE CASCADE
+);
+success!
